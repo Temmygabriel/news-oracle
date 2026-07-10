@@ -65,56 +65,69 @@ export function encodeHTTPRequest(params: {
   );
 }
 
+// The LLM precompile (0x0802) runs a self-hosted open-weight model
+// (zai-org/GLM-4.7-FP8) directly inside the TEE fleet - no external API
+// key is needed, unlike the HTTP precompile which really does call out to
+// a third-party service (NewsAPI) using a real secret.
 export function encodeLLMRequest(params: {
   executorAddress: Hex;
-  encryptedSecrets: Hex[];
-  secretSignatures: Hex[];
   systemPrompt: string;
   userMessage: string;
   model?: string;
 }): Hex {
-  const systemMsg = encodeAbiParameters(
-    [{ type: 'string' }, { type: 'string' }],
-    ['system', params.systemPrompt]
-  );
-  const userMsg = encodeAbiParameters(
-    [{ type: 'string' }, { type: 'string' }],
-    ['user', params.userMessage]
-  );
+  const messagesJson = JSON.stringify([
+    { role: 'system', content: params.systemPrompt },
+    { role: 'user', content: params.userMessage },
+  ]);
 
   return encodeAbiParameters(
     [
-      { type: 'address' }, { type: 'bytes[]' }, { type: 'uint256' },
-      { type: 'bytes[]' }, { type: 'bytes' },
-      { type: 'string' },   // model
-      { type: 'bytes[]' },  // messages
-      { type: 'uint256' },  // maxTokens
-      { type: 'uint256' },  // temperature * 100
-      { type: 'bool' },     // stream
-      { type: 'uint256' },  // topP * 100
-      { type: 'uint256' },  // frequencyPenalty * 100
-      { type: 'uint256' },  // presencePenalty * 100
-      { type: 'string[]' }, // stop sequences
-      { type: 'bytes' },    // tools (empty)
-      { type: 'string' },   // toolChoice
+      { type: 'address' },   // 0: executor
+      { type: 'bytes[]' },   // 1: secrets
+      { type: 'uint256' },   // 2: ttl
+      { type: 'bytes[]' },   // 3: sigs
+      { type: 'bytes' },     // 4: pubkey
+      { type: 'string' },    // 5: messagesJson
+      { type: 'string' },    // 6: model
+      { type: 'int256' },    // 7: frequencyPenalty
+      { type: 'string' },    // 8: logitBias
+      { type: 'bool' },      // 9: logprobs
+      { type: 'int256' },    // 10: maxTokens
+      { type: 'string' },    // 11: metadata
+      { type: 'string' },    // 12: modalities
+      { type: 'uint256' },   // 13: n
+      { type: 'bool' },      // 14: parallelTools
+      { type: 'int256' },    // 15: presencePenalty
+      { type: 'string' },    // 16: reasoning
+      { type: 'bytes' },     // 17: responseFormat
+      { type: 'int256' },    // 18: seed
+      { type: 'string' },    // 19: serviceTier
+      { type: 'string' },    // 20: stop
+      { type: 'bool' },      // 21: stream
+      { type: 'int256' },    // 22: temperature (x1000)
+      { type: 'bytes' },     // 23: toolChoice
+      { type: 'bytes' },     // 24: tools
+      { type: 'int256' },    // 25: topLogprobs
+      { type: 'int256' },    // 26: topP (x1000)
+      { type: 'string' },    // 27: user
+      { type: 'bool' },      // 28: piiEnabled
+      { type: 'tuple', components: [{ type: 'string' }, { type: 'string' }, { type: 'string' }] }, // 29: convoHistory
     ],
     [
       params.executorAddress,
-      params.encryptedSecrets,
-      200n,
-      params.secretSignatures,
-      '0x',
-      params.model ?? 'claude-haiku-4-5-20251001',
-      [systemMsg, userMsg],
-      512n,
-      70n,
+      [], 30n, [], '0x',
+      messagesJson,
+      params.model ?? 'zai-org/GLM-4.7-FP8',
+      0n, '', false, 512n,
+      '', '', 1n, false,
+      0n, '', '0x', -1n,
+      '', '',
       false,
-      100n,
-      0n,
-      0n,
-      [],
-      '0x',
-      '',
+      700n,
+      '0x', '0x',
+      -1n, 1000n,
+      '', false,
+      ['', '', ''],
     ]
   );
 }

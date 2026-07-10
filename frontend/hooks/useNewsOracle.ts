@@ -61,7 +61,6 @@ export function useNewsOracle() {
       // 2. Encrypt the NewsAPI key for that executor
       setStatus('encrypting');
       const newsApiKey = process.env.NEXT_PUBLIC_NEWS_API_KEY!;
-      const anthropicKey = process.env.NEXT_PUBLIC_ANTHROPIC_KEY!;
 
       const encryptedNewsKey = encryptSecret(
         JSON.stringify({ NEWSAPI_KEY: newsApiKey }),
@@ -129,19 +128,10 @@ export function useNewsOracle() {
 
       const headlineSummary = articlesToPromptText(headlineText);
 
-      // 5. Encrypt the Anthropic key for the LLM call
-      const encryptedAnthropicKey = encryptSecret(
-        JSON.stringify({ ANTHROPIC_API_KEY: anthropicKey }),
-        executorPublicKey
-      );
-      const anthropicKeySig = await walletClient.signMessage({
-        message: { raw: hexToBytes(encryptedAnthropicKey) },
-      });
-
+      // 5. Build the LLM request. The LLM precompile runs a self-hosted
+      // model inside the TEE - no external API key needed here.
       const llmEncoded = encodeLLMRequest({
         executorAddress,
-        encryptedSecrets: [encryptedAnthropicKey],
-        secretSignatures: [anthropicKeySig],
         systemPrompt: 'You are a concise news analyst. Summarize the provided headlines in 3-4 sentences, highlighting the most important developments.',
         userMessage: `Please summarize these recent news headlines about "${topic}":\n\n${headlineSummary}`,
       });
