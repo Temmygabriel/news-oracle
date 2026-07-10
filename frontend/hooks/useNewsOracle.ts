@@ -33,8 +33,9 @@ export function useNewsOracle() {
   const { data: walletClient } = useWalletClient();
 
   const query = useCallback(async (topic: string) => {
-    if (!walletClient || !address || !publicClient) {
-      setError('Wallet not connected');
+   if (!walletClient || !address || !publicClient) {
+      setError('Wallet not connected — check MetaMask is unlocked and on the Ritual network (Chain ID 1979)');
+      setStatus('error');
       return;
     }
 
