@@ -12,6 +12,12 @@ contract NewsOracle {
 
     address public owner;
 
+    struct ConvoMessage {
+        string role;
+        string model;
+        string content;
+    }
+
     struct NewsResult {
         string topic;
         string rawHeadlines;
@@ -119,9 +125,9 @@ contract NewsOracle {
     }
 
     function _storeLLMResult(bytes32 queryId, bytes memory actualOutput) internal {
-        // Outer LLM envelope: (bool hasError, bytes completionData, bytes rawOutput, string errorMessage, (string,string,string) convoHistory)
+        // Outer LLM envelope: (bool hasError, bytes completionData, bytes rawOutput, string errorMessage, ConvoMessage convoHistory)
         (bool hasError, bytes memory completionData,, string memory errorMessage,) =
-            abi.decode(actualOutput, (bool, bytes, bytes, string, (string, string, string)));
+            abi.decode(actualOutput, (bool, bytes, bytes, string, ConvoMessage));
 
         if (hasError) {
             results[queryId].summary = string(abi.encodePacked("LLM error: ", errorMessage));
