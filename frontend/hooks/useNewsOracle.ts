@@ -33,7 +33,7 @@ export function useNewsOracle() {
   const { data: walletClient } = useWalletClient();
 
   const query = useCallback(async (topic: string) => {
-   if (!walletClient || !address || !publicClient) {
+    if (!walletClient || !address || !publicClient) {
       setError('Wallet not connected — check MetaMask is unlocked and on the Ritual network (Chain ID 1979)');
       setStatus('error');
       return;
@@ -58,6 +58,21 @@ export function useNewsOracle() {
 
       const executorAddress = services[0].node.teeAddress;
       const executorPublicKey = services[0].node.publicKey as Hex;
+
+      // The LLM precompile needs an executor registered for LLM specifically -
+      // Capability.LLM = 1, different from HTTP's capability 0. Reusing the
+      // HTTP executor here causes an on-chain revert ("has capability HttpCall,
+      // required Llm").
+      const llmServices = await publicClient.readContract({
+        address: TEE_REGISTRY,
+        abi: TEE_REGISTRY_ABI,
+        functionName: 'getServicesByCapability',
+        args: [1, true], // 1 = LLM capability
+      });
+
+      if (!llmServices.length) throw new Error('No LLM executors available right now');
+
+      const llmExecutorAddress = llmServices[0].node.teeAddress;
 
       // 2. Encrypt the NewsAPI key for that executor
       setStatus('encrypting');
@@ -132,7 +147,7 @@ export function useNewsOracle() {
       // 5. Build the LLM request. The LLM precompile runs a self-hosted
       // model inside the TEE - no external API key needed here.
       const llmEncoded = encodeLLMRequest({
-        executorAddress,
+        executorAddress: llmExecutorAddress,
         systemPrompt: 'You are a concise news analyst. Summarize the provided headlines in 3-4 sentences, highlighting the most important developments.',
         userMessage: `Please summarize these recent news headlines about "${topic}":\n\n${headlineSummary}`,
       });
