@@ -72,7 +72,7 @@ export function useNewsOracle() {
 
       if (!llmServices.length) throw new Error('No LLM executors available right now');
 
-      const llmExecutorAddress = llmServices[0].node.teeAddress;
+      const llmExecutorAddress = llmServices[Math.floor(Math.random() * llmServices.length)].node.teeAddress;
 
       // 2. Encrypt the NewsAPI key for that executor
       setStatus('encrypting');
