@@ -93,7 +93,7 @@ export function useNewsOracle() {
       const fetchHash = await walletClient.sendTransaction({
         to: CONTRACT_ADDRESS,
         data: fetchData,
-        gas: 2_000_000n,
+        gas: 8_000_000n,
         maxFeePerGas: 20_000_000_000n,
         maxPriorityFeePerGas: 2_000_000_000n,
       });
@@ -148,7 +148,7 @@ export function useNewsOracle() {
       const summarizeHash = await walletClient.sendTransaction({
         to: CONTRACT_ADDRESS,
         data: summarizeData,
-        gas: 2_000_000n,
+        gas: 8_000_000n,
         maxFeePerGas: 20_000_000_000n,
         maxPriorityFeePerGas: 2_000_000_000n,
       });
